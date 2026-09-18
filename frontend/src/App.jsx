@@ -23,7 +23,7 @@ export default function App() {
         padding: '1rem 0', borderBottom: '1px solid var(--border)', marginBottom: '1.5rem'
       }}>
         <div>
-          <h1 style={{ letterSpacing: '-0.02em' }}>S2P Procurement Intelligence</h1>
+          <h1 style={{ letterSpacing: '-0.02em' }}>Procurement Intelligence</h1>
           <span className="tag">procurement-agent-v1.0</span>
         </div>
         <nav style={{ display: 'flex', gap: '0.25rem', marginLeft: 'auto' }}>

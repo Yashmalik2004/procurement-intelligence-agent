@@ -1,6 +1,6 @@
 # Procurement Intelligence Agent
 
-An AI-powered **Source-to-Pay (S2P) procurement automation platform** that helps organizations evaluate suppliers, route purchase approvals, discover procurement bottlenecks, and monitor operational performance.
+An AI-powered **Procurement automation platform** that helps organizations evaluate suppliers, route purchase approvals, discover procurement bottlenecks, and monitor operational performance.
 
 The system combines **RAG, LLM-powered agents, LangGraph orchestration, deterministic policy routing, REST APIs, a React dashboard, SQLite, ChromaDB, and optional Slack notifications** into a department-focused procurement workflow.
 
