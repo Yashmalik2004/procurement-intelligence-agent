@@ -4,7 +4,7 @@ An AI-powered Source-to-Pay (S2P) procurement automation platform that helps org
 
 The system combines RAG, LLM-powered agents, deterministic policy routing, LangGraph orchestration, REST APIs, a React dashboard, and persistent operational data.
 
-**Stack:** Python · FastAPI · LangGraph · Groq (llama-3.3-70b-versatile) · ChromaDB · sentence-transformers · React · Vite · SQLite · SQLAlchemy (async)
+**Stack:** Python · FastAPI · LangGraph · Groq · OpenAI GPT-OSS 120B · ChromaDB · sentence-transformers · React · Vite · SQLite · SQLAlchemy (async)
 
 ---
 
