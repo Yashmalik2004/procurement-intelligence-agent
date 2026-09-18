@@ -2,14 +2,14 @@
 
 :root {
   /* ── Backgrounds ─────────────────────────────────────────── */
-  --bg: #E9EDF1;
+  --bg: #d2d5d7;
   --surface: #FFFFFF;
   --surface-alt: #E7EDF3;
 
   /* ── Typography ──────────────────────────────────────────── */
-  --text: #1E293B;
-  --muted: #64748B;
-  --muted-light: #94A3B8;
+  --text: #18212f;
+  --muted: #5b697c;
+  --muted-light: #8d9bae;
 
   /* ── Borders ─────────────────────────────────────────────── */
   --border: #D6DEE7;
