@@ -1,6 +1,8 @@
 # Procurement Intelligence Agent
 
-A multi-agent Source-to-Pay (S2P) automation system. Four specialist agents handle supplier scoring, approval routing, process discovery, and metrics reporting — coordinated by a LangGraph state machine with a FastAPI REST backend and React dashboard.
+An AI-powered Source-to-Pay (S2P) procurement automation platform that helps organizations evaluate suppliers, route purchase approvals, discover process bottlenecks, and monitor procurement operations.
+
+The system combines RAG, LLM-powered agents, deterministic policy routing, LangGraph orchestration, REST APIs, a React dashboard, and persistent operational data.
 
 **Stack:** Python · FastAPI · LangGraph · Groq (llama-3.3-70b-versatile) · ChromaDB · sentence-transformers · React · Vite · SQLite · SQLAlchemy (async)
 
