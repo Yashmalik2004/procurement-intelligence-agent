@@ -75,7 +75,7 @@ export default function ProcessBacklog() {
         </div>
       </div>
 
-      {message && <p style={{ color: 'var(--green)', fontSize: '0.84rem' }}>{message}</p>}
+      {message && <p style={{ color: message.startsWith('Error') ? 'var(--red)' : 'var(--green)', fontSize: '0.84rem' }}>{message}</p>}
 
       {loading ? (
         <p style={{ color: 'var(--muted)' }}><span className="spin">⟳</span> Loading…</p>

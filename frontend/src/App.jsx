@@ -34,6 +34,7 @@ export default function App() {
               style={{
                 border: tab === t.id ? '1px solid var(--accent)' : '1px solid var(--border)',
                 background: tab === t.id ? 'var(--accent-dim)' : 'transparent',
+                color: tab === t.id ? 'var(--accent)' : 'var(--muted)',
               }}
             >
               {t.label}

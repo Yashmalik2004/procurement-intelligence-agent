@@ -96,9 +96,9 @@ export default function PilotPanel() {
                   <Row label="Status" value={<span className={`badge badge-${activePilot.status === 'active' ? 'green' : 'muted'}`}>{activePilot.status}</span>} />
                 </div>
                 {activePilot.blockers?.length > 0 && (
-                  <div style={{ marginTop: '0.75rem', padding: '0.6rem', background: '#450a0a', borderRadius: 6 }}>
+                  <div style={{ marginTop: '0.75rem', padding: '0.6rem', background: '#FDECEA', border: '1px solid #F5C6C6', borderRadius: 6 }}>
                     <h3 style={{ color: 'var(--red)', marginBottom: '0.35rem' }}>Blockers</h3>
-                    {activePilot.blockers.map((b, i) => <p key={i} style={{ fontSize: '0.83rem' }}>{b}</p>)}
+                    {activePilot.blockers.map((b, i) => <p key={i} style={{ fontSize: '0.83rem', color: 'var(--text)' }}>{b}</p>)}
                   </div>
                 )}
               </div>
@@ -126,7 +126,7 @@ export default function PilotPanel() {
                         placeholder="Name or role" />
                     </div>
                     <button type="submit">Submit</button>
-                    {message && <p style={{ color: 'var(--green)', fontSize: '0.8rem' }}>{message}</p>}
+                    {message && <p style={{ color: message.startsWith('Error') ? 'var(--red)' : 'var(--green)', fontSize: '0.8rem' }}>{message}</p>}
                   </form>
                 </div>
 

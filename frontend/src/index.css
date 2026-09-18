@@ -1,17 +1,34 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg: #0f1117;
-  --surface: #1a1d27;
-  --border: #2a2d3a;
-  --text: #e4e6f1;
-  --muted: #7b7f9a;
-  --accent: #6366f1;
-  --accent-dim: #3d3f6e;
-  --green: #22c55e;
-  --yellow: #eab308;
-  --red: #ef4444;
-  --blue: #3b82f6;
+  /* ── Backgrounds ─────────────────────────────────────────── */
+  --bg: #EEF2F6;
+  --surface: #FFFFFF;
+  --surface-alt: #E7EDF3;
+
+  /* ── Typography ──────────────────────────────────────────── */
+  --text: #1E293B;
+  --muted: #64748B;
+  --muted-light: #94A3B8;
+
+  /* ── Borders ─────────────────────────────────────────────── */
+  --border: #D6DEE7;
+  --border-subtle: #E2E8F0;
+  --divider: #CBD5E1;
+
+  /* ── Accent / Brand ─────────────────────────────────────── */
+  --accent: #4F6B85;
+  --accent-secondary: #647F99;
+  --accent-hover: #3F5A73;
+  --accent-dim: #E3EBF3;
+
+  /* ── Status colors (muted for enterprise theme) ─────────── */
+  --green: #3F7D58;
+  --yellow: #B7791F;
+  --red: #B45353;
+  --blue: #4F6B85;
+
+  /* ── Legacy alias (kept for inline style refs in components) */
   --radius: 8px;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
@@ -20,8 +37,8 @@ body { background: var(--bg); color: var(--text); min-height: 100vh; }
 
 a { color: var(--accent); text-decoration: none; }
 
-h1 { font-size: 1.4rem; font-weight: 700; }
-h2 { font-size: 1.1rem; font-weight: 600; }
+h1 { font-size: 1.4rem; font-weight: 700; color: var(--text); }
+h2 { font-size: 1.1rem; font-weight: 600; color: var(--text); }
 h3 { font-size: 0.9rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
 
 .card {
@@ -40,26 +57,28 @@ h3 { font-size: 0.9rem; font-weight: 600; letter-spacing: 0.05em; text-transform
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
-.badge-green  { background: #14532d; color: var(--green); }
-.badge-yellow { background: #422006; color: var(--yellow); }
-.badge-red    { background: #450a0a; color: var(--red); }
-.badge-blue   { background: #1e3a5f; color: var(--blue); }
-.badge-muted  { background: var(--border); color: var(--muted); }
+.badge-green  { background: #D1EAD9; color: #2D6A45; }
+.badge-yellow { background: #FEF3C7; color: #92600F; }
+.badge-red    { background: #FDECEA; color: #943939; }
+.badge-blue   { background: #DCEAF5; color: #3A5F7A; }
+.badge-muted  { background: var(--border-subtle); color: var(--muted); }
 
 button {
   padding: 6px 14px;
   border-radius: var(--radius);
   border: 1px solid var(--accent);
   background: var(--accent-dim);
-  color: var(--text);
+  color: var(--accent);
   font-size: 0.82rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s, color 0.15s;
 }
-button:hover { background: var(--accent); }
+button:hover { background: var(--accent); color: #FFFFFF; }
+button:disabled { opacity: 0.55; cursor: not-allowed; }
 
 input, select, textarea {
-  background: var(--bg);
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   color: var(--text);
@@ -67,18 +86,20 @@ input, select, textarea {
   font-size: 0.85rem;
   width: 100%;
 }
+input::placeholder, textarea::placeholder { color: var(--muted-light); }
 input:focus, select:focus, textarea:focus {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
+  border-color: var(--accent);
 }
 
 table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
-th { text-align: left; padding: 8px 12px; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--border); }
-td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+th { text-align: left; padding: 8px 12px; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--border); background: var(--surface-alt); }
+td { padding: 8px 12px; border-bottom: 1px solid var(--border-subtle); color: var(--text); }
 tr:last-child td { border-bottom: none; }
-tr:hover td { background: rgba(255,255,255,0.02); }
+tr:hover td { background: #F0F5FA; }
 
-.tag { font-size: 0.72rem; color: var(--muted); }
+.tag { font-size: 0.72rem; color: var(--muted-light); }
 .err { color: var(--red); font-size: 0.82rem; margin-top: 4px; }
 .spin { animation: spin 1s linear infinite; display: inline-block; }
 @keyframes spin { to { transform: rotate(360deg); } }
