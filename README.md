@@ -22,6 +22,14 @@ The agents are coordinated using **LangGraph**, while FastAPI exposes the applic
 
 ---
 
+## Live Demo
+
+The **Procurement Intelligence Agent** is live and publicly accessible. Explore the deployed application to test its AI-powered supplier scoring, approval routing, process discovery, procurement analytics, and pilot management features.
+
+**Live Application:** [https://procurement-intelligence-agent-eight.vercel.app](https://procurement-intelligence-agent-eight.vercel.app?utm_source=chatgpt.com)
+
+---
+
 ## What It Does
 
 ### 1. Supplier Scoring
