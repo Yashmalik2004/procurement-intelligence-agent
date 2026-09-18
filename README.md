@@ -8,6 +8,39 @@ The system combines RAG, LLM-powered agents, deterministic policy routing, LangG
 
 ---
 
+## What It Does
+
+The Procurement Intelligence Agent automates key stages of the Source-to-Pay procurement workflow.
+
+### 1. Supplier Scoring
+
+Evaluates suppliers across five dimensions:
+
+- Reliability
+- Compliance
+- Cost
+- Risk
+- Fit
+
+The scoring agent retrieves relevant supplier and procurement information from the knowledge base using RAG before calling the LLM. It produces individual scores, a weighted composite score, supplier status, confidence, and source attribution.
+
+### 2. Approval Routing
+
+Determines the required approval chain for a purchase request using predefined procurement policy rules stored in SQLite.
+
+For example:
+
+```text
+$80,000 IT Hardware purchase
+
+IT Manager
+     ↓
+Procurement Head
+
+SLA: 24 hours
+
+---
+
 ## Architecture
 
 ```
