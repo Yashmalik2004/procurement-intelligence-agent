@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: procurement-agent-api
+    env: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: CHROMA_PERSIST_DIR
+        value: /tmp/chroma
+      - key: KNOWLEDGE_BASE_DIR
+        value: /app/data/knowledge_base
+      - key: SEED_DIR
+        value: /app/data/seed
+      - key: CORS_ORIGINS
+        value: '["https://procurement-intelligence-agent.vercel.app"]'
+
