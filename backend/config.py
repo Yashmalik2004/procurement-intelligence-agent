@@ -12,8 +12,8 @@ class Settings(BaseSettings):
     slack_bot_token: str = ""
     slack_signing_secret: str = ""
 
-    database_url: str = "sqlite+aiosqlite:///./procurement.db"
-    chroma_persist_dir: str = "./data/chroma"
+    database_url: str = "sqlite+aiosqlite:////app/storage/procurement.db"
+    chroma_persist_dir: str = "/app/storage/chroma"
     knowledge_base_dir: str = "./data/knowledge_base"
     seed_dir: str = "./data/seed"
     dashboard_base_url: str = "http://localhost:5173"
