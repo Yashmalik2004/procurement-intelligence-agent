@@ -1,20 +1,34 @@
 # Procurement Intelligence Agent
 
-An AI-powered Source-to-Pay (S2P) procurement automation platform that helps organizations evaluate suppliers, route purchase approvals, discover process bottlenecks, and monitor procurement operations.
+An AI-powered **Source-to-Pay (S2P) procurement automation platform** that helps organizations evaluate suppliers, route purchase approvals, discover procurement bottlenecks, and monitor operational performance.
 
-The system combines RAG, LLM-powered agents, deterministic policy routing, LangGraph orchestration, REST APIs, a React dashboard, and persistent operational data.
+The system combines **RAG, LLM-powered agents, LangGraph orchestration, deterministic policy routing, REST APIs, a React dashboard, SQLite, ChromaDB, and optional Slack notifications** into a department-focused procurement workflow.
 
-**Stack:** Python · FastAPI · LangGraph · Groq · OpenAI GPT-OSS 120B · ChromaDB · sentence-transformers · React · Vite · SQLite · SQLAlchemy (async)
+---
+
+## Overview
+
+Procurement teams often spend significant time evaluating suppliers, checking approval policies, following up on purchase requests, and identifying recurring process bottlenecks.
+
+This project automates key parts of that workflow through a multi-agent architecture:
+
+1. **Supplier Scoring Agent** — evaluates suppliers across multiple procurement dimensions using retrieved knowledge-base context.
+2. **Approval Routing Agent** — determines the required approval chain from deterministic procurement policy rules.
+3. **Process Discovery Agent** — analyzes operational data to identify bottlenecks and improvement opportunities.
+4. **Metrics & Reporting Agent** — aggregates procurement metrics and produces operational reports.
+5. **Pilot Monitoring** — tracks team-level adoption, routing accuracy, scoring confidence, stakeholder feedback, and prompt versions.
+
+The agents are coordinated using **LangGraph**, while FastAPI exposes the application through REST endpoints and React provides the user-facing dashboard.
 
 ---
 
 ## What It Does
 
-The Procurement Intelligence Agent automates key stages of the Source-to-Pay procurement workflow.
-
 ### 1. Supplier Scoring
 
-Evaluates suppliers across five dimensions:
+The Supplier Scoring Agent evaluates suppliers using retrieved procurement knowledge before generating a score.
+
+It evaluates five dimensions:
 
 - Reliability
 - Compliance
@@ -22,290 +36,1074 @@ Evaluates suppliers across five dimensions:
 - Risk
 - Fit
 
-The scoring agent retrieves relevant supplier and procurement information from the knowledge base using RAG before calling the LLM. It produces individual scores, a weighted composite score, supplier status, confidence, and source attribution.
+Each dimension receives a score from **1–10**.
+
+A weighted composite score is calculated using:
+
+| Dimension | Weight |
+|---|---:|
+| Reliability | 25% |
+| Compliance | 25% |
+| Cost | 20% |
+| Risk | 20% |
+| Fit | 10% |
+
+The final supplier status is classified as:
+
+- **Preferred** — composite ≥ 7.5
+- **Conditional** — composite ≥ 6.0
+- **Watch-list** — composite ≥ 4.0
+- **Disqualified** — composite < 4.0
+
+The result is persisted in SQLite together with the retrieved source references, prompt version, confidence value, and timestamp.
+
+---
 
 ### 2. Approval Routing
 
-Determines the required approval chain for a purchase request using predefined procurement policy rules stored in SQLite.
+The Approval Routing Agent determines who must approve a purchase request based on the procurement policy stored in SQLite.
 
-For example:
+The routing process considers:
+
+- Purchase category
+- Purchase value
+- Currency
+- Supplier
+- Requester
+- Applicable policy rule
+
+The system returns:
+
+- Approval chain
+- SLA in hours
+- Policy rule ID
+- Whether the request represents a policy gap
+- Escalation conditions where applicable
+
+For example, an **$80,000 IT Hardware** request is routed to:
 
 ```text
-$80,000 IT Hardware purchase
+IT MANAGER
+      ↓
+PROCUREMENT HEAD
+```
 
-IT Manager
-     ↓
-Procurement Head
+with a **24-hour SLA**.
 
-SLA: 24 hours
+A higher-value IT Hardware request can require:
+
+```text
+IT MANAGER
+      ↓
+PROCUREMENT HEAD
+      ↓
+CEO
+```
+
+with dual approval and a longer SLA.
+
+The approval chain is determined by the backend policy rules rather than hardcoded frontend output.
 
 ---
 
-## Architecture
+### 3. Process Discovery
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                   React Dashboard (Vite)                │
-│  Dashboard · Supplier · Approval · Backlog · Pilot      │
-└────────────────────┬────────────────────────────────────┘
-                     │ HTTP (proxied /api → :8000)
-┌────────────────────▼────────────────────────────────────┐
-│                FastAPI Backend (:8000)                  │
-│  /procurement  /metrics  /audit-log  /pilot             │
-└────────────────────┬────────────────────────────────────┘
-                     │
-┌────────────────────▼────────────────────────────────────┐
-│              LangGraph Orchestrator                     │
-│                                                         │
-│  intake → supplier_scoring → approval_routing → complete│
-│         → process_discovery → complete                  │
-│         → weekly_report    → complete                   │
-│                                                         │
-│  Every transition logged to /audit-log before execution │
-└──┬─────────────┬──────────────┬───────────────┬─────────┘
-   │             │              │               │
-   ▼             ▼              ▼               ▼
-Supplier     Approval      Process         Metrics &
-Scoring      Routing       Discovery       Reporting
-Agent        Agent         Agent           Agent
-(RAG-based)  (policy-table)(log analysis)  (SQLite agg)
-   │             │              │               │
-   └─────────────┴──────────────┴───────────────┘
-                     │                   │
-              SQLite (local)       Slack (Block Kit)
-              ChromaDB (RAG)
-```
+The Process Discovery Agent analyzes procurement operational data such as:
+
+- Audit events
+- Supplier scores
+- Approval decisions
+- Feedback
+- Metrics
+
+It identifies potential process bottlenecks and produces prioritized backlog items.
+
+Each finding contains information such as:
+
+- Workflow
+- Bottleneck
+- Impact
+- Effort
+- Priority score
+- Recommended action
+- Status
+- Discovery date
+
+The backlog score is based on impact and inverse effort and is capped at **9**.
 
 ---
 
-## Agents
+### 4. Metrics & Reporting
 
-| Agent | Trigger | Retrieval source | Output |
+The Metrics & Reporting functionality aggregates operational data and provides:
+
+- Requests processed
+- Supplier scores
+- Approval decisions
+- Average cycle time
+- Escalation rate
+- Policy gaps
+- Process findings
+- Average scoring confidence
+- Agent invocation information
+
+The system can also generate a weekly procurement report containing prioritized process findings.
+
+---
+
+### 5. Pilot Monitoring
+
+The application includes pilot-team monitoring for:
+
+- Active users
+- Purchase requests
+- Routing accuracy
+- Average scoring confidence
+- Stakeholder satisfaction
+- Open feedback
+- Prompt version
+
+The dashboard currently includes seeded pilot teams such as:
+
+- `pilot-alpha`
+- `pilot-beta`
+
+Stakeholder feedback can be submitted directly from the dashboard.
+
+---
+
+# Architecture
+
+```text
+                         React Dashboard
+                               |
+                               v
+                         FastAPI REST API
+                               |
+                               v
+                      LangGraph Orchestrator
+                               |
+             +-----------------+------------------+
+             |                 |                  |
+             v                 v                  v
+      Supplier Scoring   Approval Routing   Process Discovery
+             |                 |                  |
+             v                 v                  v
+          ChromaDB          SQLite          Audit / Metrics
+             |                 |
+             +--------+--------+
+                      |
+                      v
+                LLM / AI Layer
+                      |
+                      v
+             Groq - GPT-OSS 120B
+
+                      |
+                      v
+             Metrics & Reporting
+                      |
+                      v
+                React Dashboard
+                      |
+                      v
+              Optional Slack Alerts
+```
+
+### LangGraph Workflow
+
+The main procurement request flow is:
+
+```text
+INTAKE
+  ↓
+SUPPLIER SCORING
+  ↓
+APPROVAL ROUTING
+  ↓
+COMPLETE
+```
+
+Other workflows can trigger:
+
+```text
+PROCESS DISCOVERY → COMPLETE
+
+WEEKLY REPORT → COMPLETE
+```
+
+Agent transitions are recorded in the audit log.
+
+A backend invariant ensures that an agent performs its scoring/routing/write operation only after the required retrieval step.
+
+---
+
+# Agent Architecture
+
+| Agent | Trigger | Retrieval | Output |
 |---|---|---|---|
-| **Supplier Scoring** | New/existing supplier on a PR | ChromaDB knowledge base (top-10 chunks, heading-aware) | 5-dimension score (1–10), composite, status |
-| **Approval Routing** | Every purchase request | `policy_rules` SQLite table | Approval chain, SLA, escalation condition |
-| **Process Discovery** | Scheduled / on-demand | `audit_log`, `approval_decisions`, feedback tables | Scored findings → `process_backlog` |
-| **Metrics & Reporting** | After each action / weekly | `metrics_aggregate`, `process_backlog`, feedback | Dashboard data, Slack weekly report |
-
-**Invariant:** No agent scores, routes, or writes to SQLite without a prior retrieval step. Enforced in `backend/agents/base.py`.
+| Supplier Scoring | New/existing supplier on purchase request | ChromaDB knowledge base | Dimension scores, composite, status |
+| Approval Routing | Purchase request | SQLite policy rules | Approval chain, SLA, escalation |
+| Process Discovery | Scheduled/on-demand | Audit logs, approvals, feedback, metrics | Prioritized process findings |
+| Metrics & Reporting | After actions / weekly | Metrics and process backlog | Dashboard metrics and report |
 
 ---
 
-## Setup
+# Technology Stack
 
-### Prerequisites
+### Backend
+
+- Python
+- FastAPI
+- LangGraph
+- SQLAlchemy
+- SQLite
+- Pydantic
+- Uvicorn
+
+### AI / LLM
+
+- Groq API
+- `openai/gpt-oss-120b`
+- Prompt engineering
+- Structured agent outputs
+
+### RAG
+
+- ChromaDB
+- Sentence Transformers
+- `all-MiniLM-L6-v2`
+- Knowledge-base retrieval
+- Source chunk tracking
+
+### Frontend
+
+- React
+- Vite
+- JavaScript
+- Responsive dashboard UI
+
+### Integrations
+
+- Slack notifications
+- REST APIs
+
+### Development / Deployment
+
+- Git
+- GitHub
+- Docker
+- Docker Compose
+- Render configuration
+
+---
+
+# LLM & RAG Pipeline
+
+The application uses a retrieval-first workflow.
+
+For supplier scoring:
+
+```text
+Supplier + Category
+        ↓
+Build Retrieval Query
+        ↓
+ChromaDB
+        ↓
+Retrieve Relevant Knowledge Chunks
+        ↓
+Construct LLM Prompt
+        ↓
+GPT-OSS 120B
+        ↓
+Structured Supplier Evaluation
+        ↓
+Weighted Composite Score
+        ↓
+Status Classification
+        ↓
+SQLite Persistence
+        ↓
+Audit Log
+```
+
+The supplier-scoring flow retrieves up to **10 relevant chunks** from the knowledge base.
+
+The stored result includes the source chunks used for the evaluation.
+
+---
+
+# Knowledge Base
+
+The project contains procurement knowledge in:
+
+```text
+data/knowledge_base/
+├── supplier_performance.md
+├── compliance_standards.md
+└── pricing_benchmarks.md
+```
+
+These documents provide context for supplier evaluation.
+
+The knowledge base can be extended with additional:
+
+- Supplier performance data
+- Compliance requirements
+- Pricing benchmarks
+- Procurement standards
+- Category-specific information
+
+---
+
+# Prompt Library
+
+Prompts are versioned and stored as part of the application.
+
+Current prompt versions include:
+
+```text
+supplier-score-v1.0
+approval-route-v1.0
+process-discovery-v1.0
+metrics-report-v1.0
+```
+
+Prompt versions are persisted with relevant agent outputs so that the system can maintain traceability between an output and the prompt configuration used to generate it.
+
+---
+
+# Database
+
+The application uses **SQLite with SQLAlchemy** for persistent operational data.
+
+The main database is:
+
+```text
+procurement.db
+```
+
+Important tables include:
+
+```text
+migration_log
+policy_rules
+purchase_requests
+approval_decisions
+supplier_scores
+process_backlog
+audit_log
+metrics_aggregate
+pilot_metrics
+stakeholder_feedback
+prompt_registry
+```
+
+### Supplier Score Persistence
+
+Supplier evaluations store:
+
+- Supplier name
+- Request ID
+- Reliability score
+- Compliance score
+- Cost score
+- Risk score
+- Fit score
+- Composite score
+- Status
+- Source chunks
+- Prompt version
+- Confidence
+- Scoring timestamp
+
+---
+
+# REST API
+
+Base URL during local development:
+
+```text
+http://localhost:8000
+```
+
+FastAPI documentation:
+
+```text
+http://localhost:8000/docs
+```
+
+Health check:
+
+```text
+GET /health
+```
+
+### Procurement
+
+```text
+POST /procurement/request
+GET  /procurement/request/{id}
+```
+
+Submit a purchase request and retrieve its routing/scoring status.
+
+### Supplier Scoring
+
+```text
+POST /procurement/supplier/score
+```
+
+The supplier scoring endpoint accepts the request and performs scoring in the background.
+
+Example request:
+
+```json
+{
+  "supplier_name": "TechSupply Corp",
+  "category": "IT Hardware",
+  "pilot_team": "pilot-alpha"
+}
+```
+
+### Process Discovery
+
+```text
+POST /procurement/process-discovery
+```
+
+Runs process discovery and generates prioritized process findings.
+
+### Weekly Reporting
+
+```text
+POST /procurement/weekly-report
+```
+
+Generates the procurement weekly report.
+
+### Metrics
+
+```text
+GET /metrics
+GET /metrics/history
+```
+
+### Audit
+
+```text
+GET /audit-log
+```
+
+The audit endpoint can be filtered by agent.
+
+Example:
+
+```text
+GET /audit-log?agent=supplier-scoring
+```
+
+### Pilot
+
+```text
+GET  /pilot
+GET  /pilot/{team}/summary
+POST /pilot/{team}/feedback
+```
+
+---
+
+# Local Setup
+
+## Requirements
+
+Install:
+
 - Python 3.11+
 - Node.js 18+
-- Groq API key — free tier at [console.groq.com](https://console.groq.com)
+- npm
+- Git
 
-### Install
+A valid Groq API key is required for LLM-powered scoring and generation.
 
-```powershell
-# Backend
+---
+
+## 1. Clone the Repository
+
+```bash
+git clone <your-repository-url>
+cd procurement-intelligence-agent
+```
+
+---
+
+## 2. Install Backend Dependencies
+
+```bash
 pip install -r requirements.txt
+```
 
-# Frontend
+---
+
+## 3. Install Frontend Dependencies
+
+```bash
 cd frontend
 npm install
 cd ..
 ```
 
-### Configure
+---
 
-```powershell
+## 4. Configure Environment Variables
+
+Create the environment file:
+
+```bash
 cp .env.example .env
-# Edit .env — set GROQ_API_KEY=gsk_...
-# The system runs without a key; supplier scoring returns conservative fallback scores.
 ```
 
-### Run
+Configure:
 
-```powershell
-# Backend
+```env
+GROQ_API_KEY=gsk_...
+GROQ_MODEL=openai/gpt-oss-120b
+```
+
+Optional Slack configuration can also be added if Slack notifications are required.
+
+Do not commit `.env` or API keys to GitHub.
+
+---
+
+# Running the Application
+
+## Start the Backend
+
+From the project root:
+
+```bash
 python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
-
-# Frontend (separate terminal)
-cd frontend && npm run dev
 ```
 
-| Service | URL |
-|---|---|
-| React dashboard | http://localhost:5173 |
-| FastAPI + Swagger | http://localhost:8000/docs |
-| Health check | http://localhost:8000/health |
+Backend:
 
----
-
-## Key Endpoints
-
-| Method | Path | Description |
-|---|---|---|
-| `POST` | `/procurement/request` | Submit a purchase request (triggers full pipeline) |
-| `GET` | `/procurement/request/{id}` | Get request status + routing decision |
-| `POST` | `/procurement/supplier/score` | Score a supplier against the knowledge base (async, returns 202) |
-| `POST` | `/procurement/process-discovery` | Run process discovery on-demand |
-| `POST` | `/procurement/weekly-report` | Generate and push weekly Slack report |
-| `GET` | `/metrics` | Live dashboard metrics |
-| `GET` | `/metrics/history` | 7-day rolling trend |
-| `GET` | `/audit-log` | Query audit trail |
-| `GET` | `/pilot` | List all pilot teams |
-| `GET` | `/pilot/{team}/summary` | Per-pilot metrics |
-| `POST` | `/pilot/{team}/feedback` | Submit stakeholder feedback (updates satisfaction score) |
-
----
-
-## LLM & Embeddings
-
-| Component | Provider | Model |
-|---|---|---|
-| LLM (all agents) | [Groq](https://console.groq.com) | `llama-3.3-70b-versatile` |
-| Embeddings (RAG) | Local — sentence-transformers | `all-MiniLM-L6-v2` |
-
-No OpenAI dependency. Embeddings run fully offline after the first model download (~90 MB). The Groq key is the only external credential required.
-
----
-
-## Performance
-
-Concurrency benchmark (`benchmark.py` — httpx async, 60/40 read/write worker split):
-
-```
-python benchmark.py --users 20 --duration 30
+```text
+http://localhost:8000
 ```
 
-Key design decisions for latency:
-- `/procurement/supplier/score` returns HTTP 202 immediately; LLM scoring runs in a background task, avoiding event-loop blocking.
-- Embeddings are computed locally (no network round-trip for retrieval).
-- ChromaDB is in-process with a persistent on-disk index.
+API documentation:
 
----
-
-## Database
-
-SQLite file: `procurement.db` (created on first run, gitignored).
-
-Schema managed by `migrations/001_initial_schema.sql`, executed at startup via `database.py`. The `migration_log` table is always created first — any future schema changes must add a new migration file and insert a row into `migration_log` before creating or altering tables.
-
-Key tables:
-
-| Table | Purpose |
-|---|---|
-| `migration_log` | Schema change history (required before any DDL) |
-| `policy_rules` | Approval routing policies — source of truth for the routing agent |
-| `purchase_requests` | Inbound purchase requests |
-| `approval_decisions` | Routing outputs keyed to requests |
-| `supplier_scores` | Historical scores with source chunk citations |
-| `process_backlog` | Process findings (score = impact weight × inverse-effort weight) |
-| `audit_log` | Every agent action and state transition |
-| `metrics_aggregate` | Daily rolled-up metrics consumed by the dashboard |
-| `pilot_metrics` | Per-team, per-stage pilot tracking (routing accuracy, satisfaction) |
-| `stakeholder_feedback` | Ratings and free-text feedback |
-| `prompt_registry` | Versioned prompt records |
-
----
-
-## Prompt Library
-
-All prompts are versioned. No unversioned prompt may run in pilot or production.
-
-| Prompt name | Agent |
-|---|---|
-| `supplier-score-v1.0` | Supplier Scoring Agent |
-| `approval-route-v1.0` | Approval Routing Agent |
-| `process-discovery-v1.0` | Process Discovery Agent |
-| `metrics-report-v1.0` | Metrics & Reporting Agent |
-
-Registered in `backend/prompts/library.py`. To update a prompt: add a new version (e.g. `supplier-score-v1.1`), document the change, and update the `PROMPT_VERSION` constant in the relevant agent file. Do not modify existing version entries.
-
----
-
-## Knowledge Base
-
-Markdown files in `data/knowledge_base/` are chunked by paragraph and embedded into ChromaDB on startup (skipped if already populated). Each chunk carries its section heading as context so the LLM can attribute data to the correct supplier.
-
-Add new supplier records, compliance standards, or pricing data as `.md` files — restart the backend to re-index.
-
-Current knowledge base files:
-- `supplier_performance.md` — supplier performance reviews (Acme Industrial Supplies, TechSupply Corp, GlobalParts Ltd, FastTrack Logistics, NovaTech Solutions)
-- `compliance_standards.md` — certification requirements by category
-- `pricing_benchmarks.md` — market benchmarks and scoring methodology
-
----
-
-## Slack Notifications
-
-Five trigger events post structured Block Kit messages. Raw data is never posted.
-
-| Event | Channel | Trigger condition |
-|---|---|---|
-| P1 escalation | `#procurement-alerts` | Approval chain has an escalation condition |
-| Supplier flagged | `#supplier-intel` | Supplier scored `watch-list` or `disqualified` |
-| Backlog alert | `#ops-process` | Process finding scored ≥ 7/9 |
-| Weekly report | `#procurement-weekly` | Report generated (manual or scheduled) |
-| Pilot milestone | `#pilot-ops` | Pilot stage advanced |
-
-Configure `SLACK_BOT_TOKEN` in `.env`. Without a token, notifications are printed to stdout (mock mode).
-
----
-
-## Pilot Deployment
-
-Two pilot teams are seeded on startup: `pilot-alpha` and `pilot-beta` (Stage 1, `v1.0`).
-
-Each pilot tracks: active users, requests processed, routing accuracy, average scoring confidence, stakeholder satisfaction (1–5), open feedback items, and current prompt version. Routing accuracy and stakeholder satisfaction are computed live from actual decisions and feedback ratings respectively.
-
-Advancing a stage:
-```
-PATCH /pilot/{team}/advance
+```text
+http://localhost:8000/docs
 ```
 
-Blockers must be resolved and documented before a stage is promoted. Agent behavior changes validated during experimentation must increment the prompt version before promotion.
+---
+
+## Start the Frontend
+
+Open another terminal:
+
+```bash
+cd frontend
+npm run dev
+```
+
+Dashboard:
+
+```text
+http://localhost:5173
+```
 
 ---
 
-## Project Structure
+# How to Test
 
+The dashboard contains prefilled demonstration values so a tester can run the main workflows quickly while still being able to edit the inputs.
+
+## 1. Supplier Scoring
+
+Open:
+
+```text
+Supplier Scoring
 ```
-procurement-intelligent-agent/
+
+Use:
+
+```text
+Supplier Name: TechSupply Corp
+Category: IT Hardware
+Pilot Team: pilot-alpha
+```
+
+Click:
+
+```text
+Score Supplier
+```
+
+The completed result should contain:
+
+- Reliability score
+- Compliance score
+- Cost score
+- Risk score
+- Fit score
+- Composite score
+- Supplier status
+- Confidence
+- Source information
+
+The exact score is generated from the current knowledge-base retrieval and LLM evaluation, so the numeric result should not be treated as a hardcoded expected value.
+
+---
+
+## 2. Approval Routing
+
+Open:
+
+```text
+Approval Routing
+```
+
+Use:
+
+```text
+Requester: Engineering Team
+Supplier: TechSupply Corp
+Category: IT Hardware
+Value: 80000
+Currency: USD
+Description: Purchase of 50 laptops for the engineering team
+Pilot Team: pilot-alpha
+```
+
+Click:
+
+```text
+Submit & Route
+```
+
+For an $80,000 IT Hardware request, the applicable policy routes the request through:
+
+```text
+IT MANAGER
+      ↓
+PROCUREMENT HEAD
+```
+
+Expected SLA:
+
+```text
+24 hours
+```
+
+The request status may remain:
+
+```text
+PENDING
+```
+
+while waiting for the required approval action. This indicates that the request has been routed and is awaiting approval rather than that routing failed.
+
+---
+
+## 3. Test High-Value Approval Routing
+
+Repeat the same IT Hardware request with:
+
+```text
+Value: 120000
+```
+
+The policy should require:
+
+```text
+IT MANAGER
+      ↓
+PROCUREMENT HEAD
+      ↓
+CEO
+```
+
+The rule also requires dual approval and a longer SLA.
+
+This test demonstrates that approval routing changes dynamically according to policy and purchase value.
+
+---
+
+## 4. Process Discovery
+
+Run supplier scoring and approval-routing activity first.
+
+Then open:
+
+```text
+Process Backlog
+```
+
+Click:
+
+```text
+Run Discovery
+```
+
+The system analyzes the accumulated procurement activity and generates process findings.
+
+Each finding includes:
+
+- Workflow
+- Bottleneck
+- Score
+- Effort
+- Impact
+- Recommended action
+- Status
+
+---
+
+## 5. Weekly Report
+
+From:
+
+```text
+Process Backlog
+```
+
+click:
+
+```text
+Weekly Report
+```
+
+The application generates a report based on current procurement metrics and process findings.
+
+---
+
+## 6. Pilot Status
+
+Open:
+
+```text
+Pilot Status
+```
+
+Select:
+
+```text
+pilot-alpha
+```
+
+or:
+
+```text
+pilot-beta
+```
+
+Review:
+
+- Active users
+- Requests
+- Routing accuracy
+- Average scoring confidence
+- Stakeholder satisfaction
+- Open feedback
+- Prompt version
+
+Feedback can be submitted from the same page.
+
+---
+
+# Example End-to-End Workflow
+
+A complete procurement flow can be demonstrated as:
+
+```text
+1. Supplier Scoring
+        ↓
+2. Purchase Request
+        ↓
+3. Policy-Based Approval Routing
+        ↓
+4. Audit / Metrics Collection
+        ↓
+5. Process Discovery
+        ↓
+6. Process Backlog
+        ↓
+7. Weekly Reporting
+        ↓
+8. Pilot Feedback
+```
+
+This demonstrates how the system moves from individual procurement actions to operational process improvement.
+
+---
+
+# Slack Notifications
+
+Slack is an optional notification integration.
+
+The application can support notifications for events such as:
+
+- P1 escalations
+- Supplier flags
+- Process backlog alerts
+- Weekly reports
+- Pilot milestones
+
+If Slack credentials are not configured, notification behavior can operate through the application's fallback/output mode.
+
+A valid Slack token is required for actual Slack delivery.
+
+---
+
+# UI / UX
+
+The frontend is designed as an enterprise procurement dashboard rather than a consumer-facing AI interface.
+
+Main sections:
+
+```text
+Dashboard
+Supplier Scoring
+Approval Routing
+Process Backlog
+Pilot Status
+```
+
+The interface provides:
+
+- Responsive layouts
+- Procurement-oriented terminology
+- Editable prefilled demonstration inputs
+- Supplier evaluation results
+- Prominent approval chains and SLA information
+- Process backlog prioritization
+- Pilot monitoring
+- Operational metrics
+
+The application separates AI-generated evaluation from deterministic procurement-policy decisions.
+
+---
+
+# Async Processing
+
+Supplier scoring is designed as an asynchronous operation.
+
+The API accepts the request and returns an accepted response while the scoring operation executes in the background.
+
+This prevents a long-running LLM operation from unnecessarily blocking the API request.
+
+The resulting evaluation is persisted to the database and can be retrieved by the application.
+
+---
+
+# Observability & Auditability
+
+The system records operational events in the audit log.
+
+Examples include:
+
+```text
+orchestrator transitions
+supplier scoring
+approval routing
+agent execution
+```
+
+Audit records help track:
+
+- Which agent performed an action
+- What operation was performed
+- Prompt version
+- Result/status
+- Execution metadata
+
+This provides traceability for agentic workflows.
+
+---
+
+# Project Structure
+
+```text
+procurement-intelligence-agent/
+│
 ├── backend/
-│   ├── main.py                  # FastAPI app + startup lifecycle
-│   ├── config.py                # Settings (pydantic-settings + .env)
-│   ├── database.py              # Async SQLAlchemy engine + migration runner
-│   ├── models.py                # ORM models
-│   ├── schemas.py               # Pydantic request/response schemas
 │   ├── agents/
-│   │   ├── base.py              # Retrieval guard + audit log + Groq LLM call
+│   │   ├── base.py
 │   │   ├── supplier_scoring.py
 │   │   ├── approval_routing.py
 │   │   ├── process_discovery.py
-│   │   ├── metrics_reporting.py
-│   │   └── orchestrator.py      # LangGraph state machine
-│   ├── prompts/library.py       # Versioned prompt registry
+│   │   └── metrics_reporting.py
+│   │
 │   ├── rag/
-│   │   ├── knowledge_base.py    # ChromaDB setup + heading-aware chunking
-│   │   └── retriever.py         # Top-k semantic retrieval
-│   ├── notifications/slack.py   # Block Kit notification templates
-│   └── routers/
-│       ├── audit.py             # GET /audit-log
-│       ├── metrics.py           # GET /metrics, /metrics/history
-│       ├── procurement.py       # POST /procurement/request, /supplier/score
-│       └── pilot.py             # Pilot CRUD + feedback
-├── frontend/src/
-│   ├── App.jsx                  # Tab navigation shell
-│   ├── api.js                   # Typed API client
-│   └── components/
-│       ├── Dashboard.jsx        # Live metrics + audit summary + trend chart
-│       ├── MetricsCards.jsx     # 8-metric KPI grid
-│       ├── SupplierPanel.jsx    # Scoring form + dimension breakdown
-│       ├── ApprovalPanel.jsx    # PR submission + routing result + lookup
-│       ├── ProcessBacklog.jsx   # Ranked findings + pilot breakdown
-│       └── PilotPanel.jsx       # Per-team metrics + feedback
-├── migrations/001_initial_schema.sql
+│   ├── notifications/
+│   ├── routers/
+│   ├── migrations/
+│   ├── models/
+│   ├── schemas/
+│   ├── config.py
+│   └── main.py
+│
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── SupplierPanel.jsx
+│   │   │   ├── ApprovalPanel.jsx
+│   │   │   ├── ProcessBacklog.jsx
+│   │   │   └── PilotPanel.jsx
+│   │   └── ...
+│   ├── package.json
+│   └── vite.config.*
+│
 ├── data/
-│   ├── knowledge_base/          # Supplier/compliance/pricing documents
-│   └── seed/                    # policy_rules.json, pilot_teams.json
-├── benchmark.py                 # httpx async concurrent benchmark (60/40 read/write)
-├── requirements.txt
+│   ├── knowledge_base/
+│   │   ├── supplier_performance.md
+│   │   ├── compliance_standards.md
+│   │   └── pricing_benchmarks.md
+│   └── seed/
+│
+├── benchmark/
+│
+├── tests/
+│
 ├── .env.example
-└── start.ps1
+├── requirements.txt
+├── Dockerfile
+├── docker-compose.yml
+├── render.yaml
+└── README.md
 ```
+
+---
+
+# Docker
+
+The repository includes Docker configuration for containerized deployment.
+
+Build the application:
+
+```bash
+docker build -t procurement-intelligence-agent .
+```
+
+If using Docker Compose:
+
+```bash
+docker compose up --build
+```
+
+The exact deployment configuration depends on the environment and the values provided through environment variables.
+
+---
+
+# Deployment
+
+The repository contains deployment configuration for production-oriented hosting.
+
+Before deployment:
+
+1. Configure the production environment variables.
+2. Add a valid `GROQ_API_KEY`.
+3. Set:
+
+```env
+GROQ_MODEL=openai/gpt-oss-120b
+```
+
+4. Ensure the database/storage configuration is appropriate for the hosting environment.
+5. Configure frontend/backend URLs if they differ from local development.
+6. Configure Slack credentials only if Slack notifications are required.
+7. Never expose API keys in frontend code or commit them to Git.
+
+---
+
+# Security Notes
+
+- API keys must remain server-side.
+- `.env` must not be committed.
+- Procurement data should be protected according to the organization's security requirements.
+- Authentication and authorization should be added before exposing sensitive procurement operations to untrusted users.
+- Production deployments should use a production-grade database and appropriate secret management.
+- Slack credentials should be stored as environment secrets.
+
+---
+
+# Key Design Principles
+
+### Retrieval Before Generation
+
+Agents retrieve relevant operational or policy context before producing decisions.
+
+### Deterministic Policy Routing
+
+Approval routing is based on explicit procurement rules rather than relying solely on an LLM to determine authorization.
+
+### Agent Specialization
+
+Each agent has a focused responsibility instead of using one general-purpose agent for every operation.
+
+### Traceability
+
+Agent operations, prompt versions, source chunks, and outputs are persisted for operational visibility.
+
+### Human-in-the-Loop
+
+Approval routing identifies the required human approval chain; the system does not replace the approval authority.
+
+### Business-Oriented Agentic Automation
+
+The project focuses on automating concrete procurement workflows rather than providing a generic chatbot.
+
+---
+
+# Use Case
+
+This system can be used as an internal procurement operations platform for organizations that want to automate repetitive Source-to-Pay activities while retaining deterministic business rules and human approval checkpoints.
+
+Potential extensions include:
+
+- ERP integration
+- Purchase-order generation
+- Invoice matching
+- Contract analysis
+- Supplier onboarding
+- Supplier risk monitoring
+- Email-based approval workflows
+- Authentication and role-based access control
+- PostgreSQL deployment
+- Advanced analytics
+- Additional department-specific agents
+
+---
+
+# Summary
+
+**Procurement Intelligence Agent** combines:
+
+```text
+Multi-Agent AI
+      +
+LangGraph
+      +
+RAG
+      +
+GPT-OSS 120B
+      +
+FastAPI
+      +
+React
+      +
+SQLite
+      +
+ChromaDB
+      +
+Policy Automation
+      +
+Operational Analytics
+```
+
+to create an end-to-end procurement intelligence workflow covering supplier evaluation, purchase approval routing, process discovery, reporting, and pilot monitoring.
